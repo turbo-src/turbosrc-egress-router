@@ -1,5 +1,5 @@
 {
-    "name": "engress-router",
+    "name": "egress-router",
     "version": "1.0.0",
     "description": "Outgoing Router for Turbosrc",
     "main": "server.js",
@@ -9,6 +9,7 @@
     "dependencies": {
       "express": "^4.17.1",
       "socket.io": "^4.3.2",
-      "http": "^0.0.1-security"
+      "http": "^0.0.1-security",
+      "superagent": "^6.1.0"
     }
 }

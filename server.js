@@ -1,10 +1,13 @@
 const express = require('express');
 const socketIO = require('socket.io');
 const http = require('http');
-const superagent = require('superagent');
+const bodyParser = require('body-parser');
 
 // Start Express
 const app = express();
+
+// Use JSON body parser for GraphQL
+app.use(bodyParser.json());
 
 // Start HTTP server
 const server = http.createServer(app);
@@ -13,54 +16,20 @@ const port = process.env.PORT || 4006;
 // Start socket.io
 const io = socketIO(server);
 
-// This map will store the connections to the Turbosrc instances
-// Key: instance ID, Value: socket object
-const turbosrcInstances = new Map();
-
 // This map will store pending responses
 // Key: request ID, Value: response function
 const pendingResponses = new Map();
 
-// Handler for connections from incomingRouter
-io.of('/incomingRouter').on('connection', (socket) => {
-  console.log('Connected to an incomingRouter');
+// Wait for connections from the ingress-router
+io.on('connection', (socket) => {
+  console.log('Connected to an ingressRouter');
 
-  // Handler for GraphQL requests
-  socket.on('graphqlRequest', ({ requestId, query, variables }) => {
-    // Choose a Turbosrc instance
-    // This is a simplistic approach, your choice of instance may vary
-    const instanceSocket = Array.from(turbosrcInstances.values())[0];
-
-    if (instanceSocket) {
-      // Send the request to the Turbosrc instance
-      instanceSocket.emit('graphqlRequest', { requestId, query, variables });
-
-      // Store the response callback
-      pendingResponses.set(requestId, (data) => {
-        // Forward the response back to the incomingRouter
-        socket.emit(`graphqlResponse:${requestId}`, data);
-      });
-    } else {
-      console.error('No Turbosrc instances available');
-    }
-  });
-});
-
-// Handler for connections from Turbosrc instances
-io.of('/turbosrcInstance').on('connection', (socket) => {
-  console.log('Connected to a Turbosrc instance');
-
-  // The instance should send its ID when it connects
-  socket.on('register', (instanceId) => {
-    turbosrcInstances.set(instanceId, socket);
-    console.log(`Registered Turbosrc instance ${instanceId}`);
-  });
-
-  // Handler for GraphQL responses
+  // Setup a handler for the response
   socket.on('graphqlResponse', ({ requestId, data, errors }) => {
     // Get the response callback and call it
     const respond = pendingResponses.get(requestId);
     if (respond) {
+      console.log('responding', data)
       respond({ data, errors });
       pendingResponses.delete(requestId);
     } else {
@@ -68,15 +37,24 @@ io.of('/turbosrcInstance').on('connection', (socket) => {
     }
   });
 
-  // Remove the instance when it disconnects
-  socket.on('disconnect', () => {
-    for (let [id, sock] of turbosrcInstances.entries()) {
-      if (sock === socket) {
-        turbosrcInstances.delete(id);
-        console.log(`Unregistered Turbosrc instance ${id}`);
-        break;
-      }
-    }
+  // Route for GraphQL requests
+  app.post('/graphql', (req, res) => {
+    // Create a unique ID for this request
+    const requestId = Date.now().toString();
+
+    // Send GraphQL request to the ingress-router via socket
+    console.log('routing query:', req.body.query)
+    socket.emit('graphqlRequest', {
+      requestId: requestId,
+      query: req.body.query,
+      variables: req.body.variables
+    });
+
+    // Store the response callback
+    pendingResponses.set(requestId, (data) => {
+      // Forward the response back to the client
+      res.json(data);
+    });
   });
 });
 
