@@ -1,10 +1,18 @@
 const express = require('express');
+const cors = require('cors');
 const socketIO = require('socket.io');
 const http = require('http');
 const bodyParser = require('body-parser');
 
 // Start Express
 const app = express();
+
+// Allow all origins.
+app.use(cors());
+// To limit to extension, which an be found in 'details' in  manage extensions on Chrome.
+//app.use(cors({
+//  origin: 'chrome-extension://paaclcimfcojpconekbdionnlpkbflcc'
+//}));
 
 // Use JSON body parser for GraphQL
 app.use(bodyParser.json());
