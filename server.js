@@ -21,28 +21,26 @@ const io = socketIO(server);
 const pendingResponses = new Map();
 
 // Wait for connections from the ingress-router
+
 io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
 
-  // Setup a handler for the response
+  socket.on('test', (message) => console.log(message));
   socket.on('graphqlResponse', ({ requestId, body }) => {
-    // Get the response callback and call it
     const respond = pendingResponses.get(requestId);
     if (respond) {
       console.log('responding', body)
-      respond(body);
+      clearTimeout(respond.timeout);
+      respond.callback(body);
       pendingResponses.delete(requestId);
     } else {
       console.error(`No pending response found for request ID ${requestId}`);
     }
   });
 
-  // Route for GraphQL requests
   app.post('/graphql', (req, res) => {
-    // Create a unique ID for this request
     const requestId = Date.now().toString();
 
-    // Send GraphQL request to the ingress-router via socket
     console.log('routing query:', req.body.query)
     socket.emit('graphqlRequest', {
       requestId: requestId,
@@ -50,11 +48,16 @@ io.on('connection', (socket) => {
       variables: req.body.variables
     });
 
-    // Store the response callback
-    pendingResponses.set(requestId, (data) => {
-      // Forward the response back to the client
-      res.json(data);
-    });
+    // Set a timeout for each response
+    const respond = {
+      callback: (data) => res.json(data),
+      timeout: setTimeout(() => {
+        res.status(500).send('Request timed out.');
+        pendingResponses.delete(requestId);
+      }, 10000) // 10 seconds
+    };
+
+    pendingResponses.set(requestId, respond);
   });
 });
 
