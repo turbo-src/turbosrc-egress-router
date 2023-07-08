@@ -25,12 +25,12 @@ io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
 
   // Setup a handler for the response
-  socket.on('graphqlResponse', ({ requestId, data, errors }) => {
+  socket.on('graphqlResponse', ({ requestId, body }) => {
     // Get the response callback and call it
     const respond = pendingResponses.get(requestId);
     if (respond) {
-      console.log('responding', data)
-      respond({ data, errors });
+      console.log('responding', body)
+      respond(body);
       pendingResponses.delete(requestId);
     } else {
       console.error(`No pending response found for request ID ${requestId}`);
