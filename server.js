@@ -62,7 +62,7 @@ io.on('connection', (socket) => {
       timeout: setTimeout(() => {
         res.status(500).send('Request timed out.');
         pendingResponses.delete(requestId);
-      }, 10000) // 10 seconds
+      }, 2000) // 2 seconds
     };
 
     pendingResponses.set(requestId, respond);
