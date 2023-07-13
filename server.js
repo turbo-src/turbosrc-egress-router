@@ -6,6 +6,12 @@ const bodyParser = require('body-parser');
 const { createDirectoryIfNotExist, createFile, checkFileExists } = require('./turboSrcIDmgmt');
 
 
+/*
+
+We need to handle situations where a turboSrcID isn't included in the query variables, or if the turboSrcID doesn't have an associated socket. These error conditions should be properly handled.
+
+*/
+
 // Start Express
 const app = express();
 
@@ -26,6 +32,10 @@ const io = socketIO(server);
 // Key: request ID, Value: response function
 const pendingResponses = new Map();
 
+// This map will store socket connections
+// Key: turboSrcID, Value: socket
+const socketMap = new Map();
+
 // Check and create directory if not exists
 createDirectoryIfNotExist();
 
@@ -40,7 +50,10 @@ io.on('connection', (socket) => {
       createFile(turboSrcID);
     }
 
+    // Map the socket to turboSrcID
+    socketMap.set(turboSrcID, socket);
   });
+
   socket.on('graphqlResponse', ({ requestId, body }) => {
     const respond = pendingResponses.get(requestId);
     if (respond) {
@@ -55,6 +68,13 @@ io.on('connection', (socket) => {
 
   app.post('/graphql', (req, res) => {
     const requestId = Date.now().toString();
+
+    const turboSrcIDPattern = /turboSrcID: "(.*?)"/;
+    const match = req.body.query.match(turboSrcIDPattern);
+    const turboSrcID = match ? match[1] : undefined;
+    console.log('graphql message from turboSrcID ', turboSrcID)
+
+    const socket = socketMap.get(turboSrcID);
 
     console.log('routing query:', req.body.query)
     socket.emit('graphqlRequest', {
