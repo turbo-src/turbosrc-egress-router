@@ -15,7 +15,11 @@ RUN npm install
 # Bundle app source
 COPY . .
 
+# Create the directory and change its owner. Replace 'node' with the name of your user if you're not using the node user
+RUN mkdir -p /app/turboSrcInstances && chown -R node:node /app/turboSrcInstances
+
 # Your app starts with "node server.js", so we'll use that
+USER node
 CMD [ "node", "server.js" ]
 
 # Expose the port that your app runs on. Adjust this if you're using a different port
