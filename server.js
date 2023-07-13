@@ -28,12 +28,21 @@ const io = socketIO(server);
 // Key: request ID, Value: response function
 const pendingResponses = new Map();
 
+// Populate turboSrcIDobject from contents of
+// ./turboSrcIDobject
+
 // Wait for connections from the ingress-router
 
 io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
 
-  socket.on('test', (message) => console.log(message));
+  socket.on('newConnection', (message) => {
+    console.log("newConnection: ", message)
+    // Validate turboSrcID (eth addr)
+    // Add turboSrcID to turboSrcIDobject map
+    // Add file named after turboSrcID to ./turboSrcID/ dir.
+
+  });
   socket.on('graphqlResponse', ({ requestId, body }) => {
     const respond = pendingResponses.get(requestId);
     if (respond) {
