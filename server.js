@@ -3,16 +3,14 @@ const cors = require('cors');
 const socketIO = require('socket.io');
 const http = require('http');
 const bodyParser = require('body-parser');
+const { createDirectoryIfNotExist, createFile, checkFileExists } = require('./turboSrcIDmgmt');
+
 
 // Start Express
 const app = express();
 
 // Allow all origins.
 app.use(cors());
-// To limit to extension, which an be found in 'details' in  manage extensions on Chrome.
-//app.use(cors({
-//  origin: 'chrome-extension://paaclcimfcojpconekbdionnlpkbflcc'
-//}));
 
 // Use JSON body parser for GraphQL
 app.use(bodyParser.json());
@@ -28,19 +26,19 @@ const io = socketIO(server);
 // Key: request ID, Value: response function
 const pendingResponses = new Map();
 
-// Populate turboSrcIDobject from contents of
-// ./turboSrcIDobject
-
-// Wait for connections from the ingress-router
+// Check and create directory if not exists
+createDirectoryIfNotExist();
 
 io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
 
-  socket.on('newConnection', (message) => {
-    console.log("newConnection: ", message)
-    // Validate turboSrcID (eth addr)
-    // Add turboSrcID to turboSrcIDobject map
-    // Add file named after turboSrcID to ./turboSrcID/ dir.
+  socket.on('newConnection', (turboSrcID) => {
+    console.log("newConnection: ", turboSrcID)
+
+    // Check if the turboSrcID file already exists, if not create it.
+    if (!checkFileExists(turboSrcID)) {
+      createFile(turboSrcID);
+    }
 
   });
   socket.on('graphqlResponse', ({ requestId, body }) => {
