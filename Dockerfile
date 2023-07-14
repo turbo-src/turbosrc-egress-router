@@ -4,6 +4,9 @@ FROM node:12
 # Create app directory
 WORKDIR /app
 
+# Ensure the directory for volume mount is owned by node
+RUN mkdir /app/turboSrcInstances && chown -R node:node /app/turboSrcInstances
+
 # Install app dependencies
 # We're copying both package.json AND package-lock.json. If you don't use lock files, you might not have the latter
 COPY package*.json ./
@@ -13,14 +16,13 @@ COPY package*.json ./
 RUN npm install
 
 # Bundle app source
-COPY . .
-
-# Create the directory and change its owner. Replace 'node' with the name of your user if you're not using the node user
-RUN mkdir -p /app/turboSrcInstances && chown -R node:node /app/turboSrcInstances
+COPY --chown=node:node . .
 
 # Your app starts with "node server.js", so we'll use that
-USER node
 CMD [ "node", "server.js" ]
 
 # Expose the port that your app runs on. Adjust this if you're using a different port
 EXPOSE 4006
+
+# Change to 'node' user
+USER node
