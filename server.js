@@ -38,6 +38,8 @@ fs.readdirSync(directoryPath).forEach((file) => {
   socketMap.set(turboSrcID, null);
 });
 
+console.log(socketMap)
+
 io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
 
