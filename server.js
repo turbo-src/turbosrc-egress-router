@@ -3,41 +3,35 @@ const cors = require('cors');
 const socketIO = require('socket.io');
 const http = require('http');
 const bodyParser = require('body-parser');
-const { createDirectoryIfNotExist, createFile, checkFileExists } = require('./turboSrcIDmgmt');
+const {
+  createDirectoryIfNotExist,
+  createFile,
+  checkFileExists,
+  addRepoToTurboSrcInstance,
+  getTurboSrcIdFromRepoName,
+  getRepoNamesFromTurboSrcID,
+} = require('./turboSrcIDmgmt');
 
-
-/*
-
-We need to handle situations where a turboSrcID isn't included in the query variables, or if the turboSrcID doesn't have an associated socket. These error conditions should be properly handled.
-
-*/
-
-// Start Express
 const app = express();
 
-// Allow all origins.
 app.use(cors());
-
-// Use JSON body parser for GraphQL
 app.use(bodyParser.json());
 
-// Start HTTP server
 const server = http.createServer(app);
 const port = process.env.PORT || 4006;
 
-// Start socket.io
 const io = socketIO(server);
 
-// This map will store pending responses
-// Key: request ID, Value: response function
 const pendingResponses = new Map();
-
-// This map will store socket connections
-// Key: turboSrcID, Value: socket
 const socketMap = new Map();
 
-// Check and create directory if not exists
 createDirectoryIfNotExist();
+
+// Populating the map with the turboSrcIDs at startup
+fs.readdirSync(directoryPath).forEach((file) => {
+  const turboSrcID = path.basename(file, '.txt');
+  socketMap.set(turboSrcID, null);
+});
 
 io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
@@ -45,12 +39,10 @@ io.on('connection', (socket) => {
   socket.on('newConnection', (turboSrcID) => {
     console.log("newConnection: ", turboSrcID)
 
-    // Check if the turboSrcID file already exists, if not create it.
     if (!checkFileExists(turboSrcID)) {
       createFile(turboSrcID);
     }
 
-    // Map the socket to turboSrcID
     socketMap.set(turboSrcID, socket);
   });
 
@@ -74,6 +66,13 @@ io.on('connection', (socket) => {
     const turboSrcID = match ? match[1] : undefined;
     console.log('graphql message from turboSrcID ', turboSrcID)
 
+    if (req.body.query.includes("createRepo")) {
+      const reponamePattern = /owner: "(.*?)", repo: "(.*?)"/;
+      const repoMatch = req.body.query.match(reponamePattern);
+      const reponame = repoMatch ? `${repoMatch[1]}/${repoMatch[2]}` : undefined;
+      addRepoToTurboSrcInstance(turboSrcID, reponame);
+    }
+
     const socket = socketMap.get(turboSrcID);
 
     console.log('routing query:', req.body.query)
@@ -83,7 +82,19 @@ io.on('connection', (socket) => {
       variables: req.body.variables
     });
 
-    // Set a timeout for each response
+    if (req.body.query.includes("getTurboSrcIdFromRepoName")) {
+      const reponamePattern = /reponame: "(.*?)"/;
+      const reponameMatch = req.body.query.match(reponamePattern);
+      const reponame = reponameMatch ? reponameMatch[1] : undefined;
+      const result = getTurboSrcIdFromRepoName(reponame);
+      return res.json({ data: { turboSrcID: result } });
+    }
+
+    if (req.body.query.includes("getRepoNamesFromTurboSrcID")) {
+      const result = getRepoNamesFromTurboSrcID(turboSrcID);
+      return res.json({ data: { reponames: result } });
+    }
+
     const respond = {
       callback: (data) => res.json(data),
       timeout: setTimeout(() => {
@@ -96,5 +107,4 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start the server
 server.listen(port, () => console.log(`Listening on port ${port}`));
