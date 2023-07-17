@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const socketIO = require('socket.io');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const bodyParser = require('body-parser');
 const {
   createDirectoryIfNotExist,
@@ -17,6 +19,8 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+const directoryPath = path.join(__dirname, './turboSrcInstances/');
+
 const server = http.createServer(app);
 const port = process.env.PORT || 4006;
 
@@ -26,6 +30,7 @@ const pendingResponses = new Map();
 const socketMap = new Map();
 
 createDirectoryIfNotExist();
+
 
 // Populating the map with the turboSrcIDs at startup
 fs.readdirSync(directoryPath).forEach((file) => {
