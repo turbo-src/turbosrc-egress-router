@@ -65,6 +65,19 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('connect_error', (error) => {
+    console.error(`Connection to egress-router failed. Error:`, error);
+  });
+
+  socket.on('error', (error) => {
+    console.error(`Socket.IO error:`, error);
+  });
+
+  socket.on('reconnect_error', (error) => {
+    console.error(`Reconnection failed. Error:`, error);
+  });
+
+
   app.post('/graphql', (req, res) => {
     const requestId = Date.now().toString();
 
