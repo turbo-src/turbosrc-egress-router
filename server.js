@@ -93,15 +93,7 @@ io.on('connection', (socket) => {
       addRepoToTurboSrcInstance(turboSrcID, reponame);
     }
 
-    const socket = socketMap.get(turboSrcID);
-
-    console.log('routing query:', req.body.query)
-    socket.emit('graphqlRequest', {
-      requestId: requestId,
-      query: req.body.query,
-      variables: req.body.variables
-    });
-
+    // If returned, will not hit ingress router.
     if (req.body.query.includes("getTurboSrcIDFromRepoName")) {
       const reponamePattern = /reponame: "(.*?)"/;
       const reponameMatch = req.body.query.match(reponamePattern);
@@ -110,10 +102,20 @@ io.on('connection', (socket) => {
       return res.json({ data: { turboSrcID: result } });
     }
 
+    // If returned, will not hit ingress router.
     if (req.body.query.includes("getRepoNamesFromTurboSrcID")) {
       const result = getRepoNamesFromTurboSrcID(turboSrcID);
       return res.json({ data: { reponames: result } });
     }
+
+    // Same aren't sent to turbosrc-service ingress router.
+    const socket = socketMap.get(turboSrcID);
+    console.log('routing query:', req.body.query)
+    socket.emit('graphqlRequest', {
+      requestId: requestId,
+      query: req.body.query,
+      variables: req.body.variables
+    });
 
     const respond = {
       callback: (data) => res.json(data),
