@@ -10,7 +10,7 @@ const {
   createFile,
   checkFileExists,
   addRepoToTurboSrcInstance,
-  getTurboSrcIdFromRepoName,
+  getTurboSrcIDFromRepoName,
   getRepoNamesFromTurboSrcID,
 } = require('./turboSrcIDmgmt');
 
@@ -102,11 +102,11 @@ io.on('connection', (socket) => {
       variables: req.body.variables
     });
 
-    if (req.body.query.includes("getTurboSrcIdFromRepoName")) {
+    if (req.body.query.includes("getTurboSrcIDFromRepoName")) {
       const reponamePattern = /reponame: "(.*?)"/;
       const reponameMatch = req.body.query.match(reponamePattern);
       const reponame = reponameMatch ? reponameMatch[1] : undefined;
-      const result = getTurboSrcIdFromRepoName(reponame);
+      const result = getTurboSrcIDFromRepoName(reponame);
       return res.json({ data: { turboSrcID: result } });
     }
 

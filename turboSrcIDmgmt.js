@@ -53,7 +53,7 @@ function addRepoToTurboSrcInstance(turboSrcID, reponame) {
  * @param {string} reponame - The name of the repository to search for.
  * @returns {string|null} The turboSrcID if found, null otherwise.
  */
-function getTurboSrcIdFromRepoName(reponame) {
+function getTurboSrcIDFromRepoName(reponame) {
     const files = fs.readdirSync(directoryPath);
 
     for (const file of files) {
@@ -91,6 +91,6 @@ module.exports = {
     createFile,
     checkFileExists,
     addRepoToTurboSrcInstance,
-    getTurboSrcIdFromRepoName,
+    getTurboSrcIDFromRepoName,
     getRepoNamesFromTurboSrcID
 };
