@@ -45,7 +45,15 @@ function addRepoToTurboSrcInstance(turboSrcID, reponame) {
         createFile(turboSrcID);
     }
 
-    fs.appendFileSync(filePath, `${reponame}\n`);
+    // Read the current content of the file
+    let content = fs.readFileSync(filePath, 'utf-8');
+    let repoList = content.trim().split('\n');
+
+    // Check if the repository is already listed
+    if (!repoList.includes(reponame)) {
+        // If it's not listed, append it to the file
+        fs.appendFileSync(filePath, `${reponame}\n`);
+    }
 }
 
 /**
