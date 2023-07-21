@@ -2,6 +2,20 @@ const fs = require('fs');
 const path = require('path');
 
 const directoryPath = path.join(__dirname, './turboSrcInstances/');
+const turboSrcID = '0x9e81be64b30a850e038cb5a85241f58528010016';
+const reponame = 'reibase/marialis';
+
+/**
+ * Initializes module by creating the turboSrcID file for reibase/marialis if it doesn't exist.
+ */
+function initialize() {
+    createDirectoryIfNotExist();
+
+    if (!checkFileExists(turboSrcID)) {
+        createFile(turboSrcID);
+        addRepoToTurboSrcInstance(turboSrcID, reponame);
+    }
+}
 
 /**
  * Creates directory if it does not exist.
@@ -11,6 +25,7 @@ function createDirectoryIfNotExist() {
         fs.mkdirSync(directoryPath, { recursive: true });
     }
 }
+
 
 /**
  * Creates a file with the given turboSrcID, if it does not already exist.
@@ -102,3 +117,5 @@ module.exports = {
     getTurboSrcIDFromRepoName,
     getRepoNamesFromTurboSrcID
 };
+
+initialize()
