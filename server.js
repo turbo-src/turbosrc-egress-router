@@ -2,42 +2,43 @@ const express = require('express');
 const cors = require('cors');
 const socketIO = require('socket.io');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const bodyParser = require('body-parser');
-const { createDirectoryIfNotExist, createFile, checkFileExists } = require('./turboSrcIDmgmt');
+const {
+  createDirectoryIfNotExist,
+  createFile,
+  checkFileExists,
+  addRepoToTurboSrcInstance,
+  getTurboSrcIDFromRepoName,
+  getRepoNamesFromTurboSrcID,
+} = require('./turboSrcIDmgmt');
 
-
-/*
-
-We need to handle situations where a turboSrcID isn't included in the query variables, or if the turboSrcID doesn't have an associated socket. These error conditions should be properly handled.
-
-*/
-
-// Start Express
 const app = express();
 
-// Allow all origins.
 app.use(cors());
-
-// Use JSON body parser for GraphQL
 app.use(bodyParser.json());
 
-// Start HTTP server
+const directoryPath = path.join(__dirname, './turboSrcInstances/');
+
 const server = http.createServer(app);
 const port = process.env.PORT || 4006;
 
-// Start socket.io
 const io = socketIO(server);
 
-// This map will store pending responses
-// Key: request ID, Value: response function
 const pendingResponses = new Map();
-
-// This map will store socket connections
-// Key: turboSrcID, Value: socket
 const socketMap = new Map();
 
-// Check and create directory if not exists
 createDirectoryIfNotExist();
+
+
+// Populating the map with the turboSrcIDs at startup
+fs.readdirSync(directoryPath).forEach((file) => {
+  const turboSrcID = path.basename(file, '.txt');
+  socketMap.set(turboSrcID, null);
+});
+
+console.log(socketMap)
 
 io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
@@ -45,12 +46,10 @@ io.on('connection', (socket) => {
   socket.on('newConnection', (turboSrcID) => {
     console.log("newConnection: ", turboSrcID)
 
-    // Check if the turboSrcID file already exists, if not create it.
     if (!checkFileExists(turboSrcID)) {
       createFile(turboSrcID);
     }
 
-    // Map the socket to turboSrcID
     socketMap.set(turboSrcID, socket);
   });
 
@@ -66,6 +65,19 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('connect_error', (error) => {
+    console.error(`Connection to egress-router failed. Error:`, error);
+  });
+
+  socket.on('error', (error) => {
+    console.error(`Socket.IO error:`, error);
+  });
+
+  socket.on('reconnect_error', (error) => {
+    console.error(`Reconnection failed. Error:`, error);
+  });
+
+
   app.post('/graphql', (req, res) => {
     const requestId = Date.now().toString();
 
@@ -74,8 +86,30 @@ io.on('connection', (socket) => {
     const turboSrcID = match ? match[1] : undefined;
     console.log('graphql message from turboSrcID ', turboSrcID)
 
-    const socket = socketMap.get(turboSrcID);
+    if (req.body.query.includes("createRepo")) {
+      const reponamePattern = /owner: "(.*?)", repo: "(.*?)"/;
+      const repoMatch = req.body.query.match(reponamePattern);
+      const reponame = repoMatch ? `${repoMatch[1]}/${repoMatch[2]}` : undefined;
+      addRepoToTurboSrcInstance(turboSrcID, reponame);
+    }
 
+    // If returned, will not hit ingress router.
+    if (req.body.query.includes("getTurboSrcIDFromRepoName")) {
+      const reponamePattern = /reponame: "(.*?)"/;
+      const reponameMatch = req.body.query.match(reponamePattern);
+      const reponame = reponameMatch ? reponameMatch[1] : undefined;
+      const result = getTurboSrcIDFromRepoName(reponame);
+      return res.json({ data: { turboSrcID: result } });
+    }
+
+    // If returned, will not hit ingress router.
+    if (req.body.query.includes("getRepoNamesFromTurboSrcID")) {
+      const result = getRepoNamesFromTurboSrcID(turboSrcID);
+      return res.json({ data: { reponames: result } });
+    }
+
+    // Same aren't sent to turbosrc-service ingress router.
+    const socket = socketMap.get(turboSrcID);
     console.log('routing query:', req.body.query)
     socket.emit('graphqlRequest', {
       requestId: requestId,
@@ -83,7 +117,6 @@ io.on('connection', (socket) => {
       variables: req.body.variables
     });
 
-    // Set a timeout for each response
     const respond = {
       callback: (data) => res.json(data),
       timeout: setTimeout(() => {
@@ -96,5 +129,4 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start the server
 server.listen(port, () => console.log(`Listening on port ${port}`));
