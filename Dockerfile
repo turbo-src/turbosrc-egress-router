@@ -23,6 +23,7 @@ CMD [ "node", "server.js" ]
 
 # Expose the port that your app runs on. Adjust this if you're using a different port
 EXPOSE 4006
+EXPOSE 4007
 
 # Change to 'node' user
 USER node
