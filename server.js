@@ -32,7 +32,7 @@ const port4007 = 4007;
 const io = socketIO(server);
 const io4007 = socketIO(server4007, {
   cors: {
-    origin: "https://github.com",
+    origin: "*", // accept requests from all origins
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
     credentials: true
