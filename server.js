@@ -20,6 +20,7 @@ app.use(bodyParser.json());
 
 // Create a new express app for the second server
 const app4007 = express();
+app4007.use(cors());
 
 const directoryPath = path.join(__dirname, './turboSrcInstances/');
 
