@@ -20,7 +20,10 @@ app.use(bodyParser.json());
 
 // Create a new express app for the second server
 const app4007 = express();
-app4007.use(cors());
+app.use(cors({
+  origin: ["https://turbosrc-marialis.dev", "chrome-extension://iheeaooklhfljkpaahemgfjhbppambjj"]
+}));
+
 
 const directoryPath = path.join(__dirname, './turboSrcInstances/');
 
@@ -33,13 +36,12 @@ const port4007 = 4007;
 const io = socketIO(server);
 const io4007 = socketIO(server4007, {
   cors: {
-    origin: "*", // accept requests from all origins
+    origin: ["https://turbosrc-marialis.dev", "chrome-extension://iheeaooklhfljkpaahemgfjhbppambjj"],
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
     credentials: true
   }
 });
-
 const pendingResponses = new Map();
 const socketMap = new Map();
 
