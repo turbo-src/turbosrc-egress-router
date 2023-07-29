@@ -20,10 +20,9 @@ app.use(bodyParser.json());
 
 // Create a new express app for the second server
 const app4007 = express();
-app.use(cors({
+app4007.use(cors({
   origin: ["https://turbosrc-marialis.dev", "chrome-extension://iheeaooklhfljkpaahemgfjhbppambjj"]
 }));
-
 
 const directoryPath = path.join(__dirname, './turboSrcInstances/');
 
@@ -33,10 +32,17 @@ const server4007 = http.createServer(app4007);  // use app4007 in the server cre
 const port = process.env.PORT || 4006;
 const port4007 = 4007;
 
-const io = socketIO(server);
+const io = socketIO(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["my-custom-header"],
+    credentials: true
+  }
+});
 const io4007 = socketIO(server4007, {
   cors: {
-    origin: ["https://turbosrc-marialis.dev", "chrome-extension://iheeaooklhfljkpaahemgfjhbppambjj"],
+    origin: "*",
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
     credentials: true
@@ -117,6 +123,10 @@ io4007.on('connection', (socket) => {
   socket.on('reconnect_error', (error) => {
     console.error(`Reconnection failed. Error:`, error);
   });
+});
+
+app4007.get('/', (req, res) => {
+  res.send('GET request to the homepage');
 });
 
 app.post('/graphql', (req, res) => {
