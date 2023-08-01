@@ -41,6 +41,7 @@ const io = socketIO(server, {
   }
 });
 const io4007 = socketIO(server4007, {
+  path: '/vote-client/',
   cors: {
     origin: "*",
     methods: ["GET", "POST"],
