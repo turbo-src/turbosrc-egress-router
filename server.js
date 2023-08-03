@@ -146,9 +146,9 @@ app.post('/graphql', (req, res) => {
   console.log('graphql message from turboSrcID ', turboSrcID)
 
   // If returned, will not hit ingress router.
-  if (req.body.query.includes("getTurboSrcIDFromRepoInstance")) {
+  if (req.body.query.includes("getTurboSrcIDfromInstance")) {
     console.log("getTurboSrcIDfromInstance", turboSrcIDfromInstance)
-    return res.json({ data: { turboSrcID: turboSrcIDfromInstance } });
+    return res.json({ data: { getTurboSrcIDfromInstance: turboSrcIDfromInstance } });
   }
 
   if (req.body.query.includes("createRepo")) {
