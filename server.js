@@ -18,6 +18,12 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+function getTurboSrcID() {
+  return process.env.TURBOSRC_ID;
+}
+
+const turboSrcIDfromInstance = getTurboSrcID();
+
 // Create a new express app for the second server
 const app4007 = express();
 app4007.use(cors({
@@ -65,11 +71,12 @@ console.log(socketMap)
 io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
 
-  socket.on('newConnection', (turboSrcID) => {
-    console.log("newConnection: ", turboSrcID)
+  socket.on('newConnection', (turboSrcID, reponame) => {
+    console.log("newConnection: ", turboSrcID, reponame)
 
     if (!checkFileExists(turboSrcID)) {
       createFile(turboSrcID);
+      addRepoToTurboSrcInstance(turboSrcID, reponame);
     }
 
     socketMap.set(turboSrcID, socket);
@@ -137,6 +144,12 @@ app.post('/graphql', (req, res) => {
   const match = req.body.query.match(turboSrcIDPattern);
   const turboSrcID = match ? match[1] : undefined;
   console.log('graphql message from turboSrcID ', turboSrcID)
+
+  // If returned, will not hit ingress router.
+  if (req.body.query.includes("getTurboSrcIDFromRepoInstance")) {
+    console.log("getTurboSrcIDfromInstance", turboSrcIDfromInstance)
+    return res.json({ data: { turboSrcID: turboSrcIDfromInstance } });
+  }
 
   if (req.body.query.includes("createRepo")) {
     const reponamePattern = /owner: "(.*?)", repo: "(.*?)"/;
