@@ -28,22 +28,29 @@ function getTurboSrcID() {
 const turboSrcIDfromInstance = getTurboSrcID();
 
 function verifySignedTurboSrcID(signedTurboSrcID, turboSrcID) {
+  // Convert the turboSrcID to a Buffer if it isn't already
+  const turboSrcIDBuffer = Buffer.isBuffer(turboSrcID) ? turboSrcID : ethUtil.toBuffer(turboSrcID);
+
   // Firstly, hash the message using keccak256 (standard for Ethereum)
-  const messageHash = ethUtil.keccak256(turboSrcID);
+  const messageHash = ethUtil.keccak256(turboSrcIDBuffer);
 
-  // Create a public key object from the signature and message hash
-  const publicKey = ethUtil.ecrecover(messageHash,
-                                       Buffer.from(signedTurboSrcID, 'hex'));
+  // Separate the v, r, and s components from the signature
+  const signatureBuffer = Buffer.from(signedTurboSrcID, 'hex');
+  const r = signatureBuffer.slice(0, 32);
+  const s = signatureBuffer.slice(32, 64);
+  const v = signatureBuffer.readUInt8(64);
 
-  // Derive the Ethereum address from the public key
-  const derivedAddress = ethUtil.publicToAddress(publicKey).toString('hex');
+  // Recover the public key from the signature and message hash
+  const publicKey = ethUtil.ecrecover(messageHash, v, r, s);
 
-  // Compare derived address with the provided Ethereum address
-  if (derivedAddress !== turboSrcID) {
+  // Derive the Ethereum address from the public key and add the 0x prefix
+  const derivedAddress = "0x" + ethUtil.publicToAddress(publicKey).toString('hex');
+
+  // Compare the derived address with the provided Ethereum address
+  if (derivedAddress.toLowerCase() !== turboSrcID.toLowerCase()) {
       throw new Error('Invalid signature');
   }
 }
-
 // Create a new express app for the second server
 const app4007 = express();
 app4007.use(cors({
