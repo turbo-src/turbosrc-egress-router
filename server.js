@@ -13,6 +13,9 @@ const {
   getTurboSrcIDFromRepoName,
   getRepoNamesFromTurboSrcID,
 } = require('./turboSrcIDmgmt');
+const { sign } = require('crypto');
+const Wallet = require('ethereumjs-wallet');
+const ethUtil = require('ethereumjs-util');
 
 const app = express();
 app.use(cors());
@@ -23,6 +26,23 @@ function getTurboSrcID() {
 }
 
 const turboSrcIDfromInstance = getTurboSrcID();
+
+function verifySignedTurboSrcID(signedTurboSrcID, turboSrcID) {
+  // Firstly, hash the message using keccak256 (standard for Ethereum)
+  const messageHash = ethUtil.keccak256(turboSrcID);
+
+  // Create a public key object from the signature and message hash
+  const publicKey = ethUtil.ecrecover(messageHash,
+                                       Buffer.from(signedTurboSrcID, 'hex'));
+
+  // Derive the Ethereum address from the public key
+  const derivedAddress = ethUtil.publicToAddress(publicKey).toString('hex');
+
+  // Compare derived address with the provided Ethereum address
+  if (derivedAddress !== turboSrcID) {
+      throw new Error('Invalid signature');
+  }
+}
 
 // Create a new express app for the second server
 const app4007 = express();
@@ -71,15 +91,22 @@ console.log(socketMap)
 io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
 
-  socket.on('newConnection', (turboSrcID, reponame) => {
-    console.log("newConnection: ", turboSrcID, reponame)
+  socket.on('newConnection', (turboSrcID, signedTurboSrcIDturboSrcID, reponame) => {
+    console.log("newConnection: ", turboSrcID, signedTurboSrcIDturboSrcID, reponame)
 
-    if (!checkFileExists(turboSrcID)) {
-      createFile(turboSrcID);
-      addRepoToTurboSrcInstance(turboSrcID, reponame);
+    const verified = verifySignedTurboSrcID(signedTurboSrcIDturboSrcID, turboSrcID);
+
+    if (!verified) {
+        if (!checkFileExists(turboSrcID)) {
+          createFile(turboSrcID);
+          addRepoToTurboSrcInstance(turboSrcID, reponame);
+        }
+
+        socketMap.set(turboSrcID, socket);
+        console.log('socketMap', socketMap)
+    } else {
+      console.log("Invalid  turboSrcID. Not adding to socketMap. Signed turboSrcID does not match turboSrcID.")
     }
-
-    socketMap.set(turboSrcID, socket);
   });
 
   socket.on('graphqlResponse', ({ requestId, body }) => {
