@@ -100,20 +100,18 @@ io.on('connection', (socket) => {
 
   socket.on('newConnection', (turboSrcID, signedTurboSrcIDturboSrcID, reponame) => {
     console.log("newConnection: ", turboSrcID, signedTurboSrcIDturboSrcID, reponame)
+    try {
+      verifySignedTurboSrcID(signedTurboSrcIDturboSrcID, turboSrcID);
 
-    const verified = verifySignedTurboSrcID(signedTurboSrcIDturboSrcID, turboSrcID);
-
-    if (!verified) {
-        if (!checkFileExists(turboSrcID)) {
+      if (!checkFileExists(turboSrcID)) {
           createFile(turboSrcID);
           addRepoToTurboSrcInstance(turboSrcID, reponame);
-        }
+      }
 
-        socketMap.set(turboSrcID, socket);
-        console.log('Validated turboSrcID from message signature.')
-        //console.log('socketMap', socketMap)
-    } else {
-      console.log("Invalid  turboSrcID. Not adding to socketMap. Signed turboSrcID does not match turboSrcID.")
+      socketMap.set(turboSrcID, socket);
+      console.log('Validated turboSrcID from message signature.');
+    } catch (err) {
+        console.log("Invalid turboSrcID. Not adding to socketMap. Reason:", err.message);
     }
   });
 
