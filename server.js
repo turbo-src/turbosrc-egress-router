@@ -110,7 +110,8 @@ io.on('connection', (socket) => {
         }
 
         socketMap.set(turboSrcID, socket);
-        console.log('socketMap', socketMap)
+        console.log('Validated turboSrcID from message signature.')
+        //console.log('socketMap', socketMap)
     } else {
       console.log("Invalid  turboSrcID. Not adding to socketMap. Signed turboSrcID does not match turboSrcID.")
     }
@@ -209,12 +210,18 @@ app.post('/graphql', (req, res) => {
 
   // Same aren't sent to turbosrc-service ingress router.
   const socket = socketMap.get(turboSrcID);
-  console.log('routing query:', req.body.query)
-  socket.emit('graphqlRequest', {
-    requestId: requestId,
-    query: req.body.query,
-    variables: req.body.variables
-  });
+  console.log('routing query:', req.body.query);
+  if (socket) {
+      socket.emit('graphqlRequest', {
+          requestId: requestId,
+          query: req.body.query,
+          variables: req.body.variables
+      });
+  } else {
+      console.error(`No socket found for turboSrcID: ${turboSrcID}`);
+      res.status(500).send('Internal Server Error.');
+      return;
+  }
 
   const respond = {
     callback: (data) => res.json(data),
