@@ -93,7 +93,7 @@ fs.readdirSync(directoryPath).forEach((file) => {
   socketMap.set(turboSrcID, null);
 });
 
-console.log(socketMap)
+//console.log(socketMap)
 
 io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
@@ -120,7 +120,7 @@ io.on('connection', (socket) => {
   socket.on('graphqlResponse', ({ requestId, body }) => {
     const respond = pendingResponses.get(requestId);
     if (respond) {
-      console.log('responding', body)
+      //console.log('responding', body)
       clearTimeout(respond.timeout);
       respond.callback(body);
       pendingResponses.delete(requestId);
@@ -182,7 +182,7 @@ app.post('/graphql', (req, res) => {
 
   // If returned, will not hit ingress router.
   if (req.body.query.includes("getTurboSrcIDfromInstance")) {
-    console.log("getTurboSrcIDfromInstance", turboSrcIDfromInstance)
+    //console.log("getTurboSrcIDfromInstance", turboSrcIDfromInstance)
     return res.json({ data: { getTurboSrcIDfromInstance: turboSrcIDfromInstance } });
   }
 
@@ -210,7 +210,7 @@ app.post('/graphql', (req, res) => {
 
   // Same aren't sent to turbosrc-service ingress router.
   const socket = socketMap.get(turboSrcID);
-  console.log('routing query:', req.body.query);
+  //console.log('routing query:', req.body.query);
   if (socket) {
       socket.emit('graphqlRequest', {
           requestId: requestId,
