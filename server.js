@@ -206,9 +206,17 @@ app.post('/graphql', (req, res) => {
     return res.json({ data: { reponames: result } });
   }
 
-  // Same aren't sent to turbosrc-service ingress router.
+  // Existing code
   const socket = socketMap.get(turboSrcID);
-  //console.log('routing query:', req.body.query);
+
+  // Check if turboSrcID is undefined or not valid
+  if (!turboSrcID) {
+      console.error('Received undefined turboSrcID. Skipping routing.');
+      res.status(400).send('Bad Request: Missing or invalid turboSrcID.');
+      return;
+  }
+
+  // Check if socket is valid for the provided turboSrcID
   if (socket) {
       socket.emit('graphqlRequest', {
           requestId: requestId,
@@ -218,7 +226,6 @@ app.post('/graphql', (req, res) => {
   } else {
       console.error(`No socket found for turboSrcID: ${turboSrcID}`);
       res.status(500).send('Internal Server Error.');
-      return;
   }
 
   const respond = {
