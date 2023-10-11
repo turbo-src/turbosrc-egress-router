@@ -82,10 +82,40 @@ io.on('connection', (socket) => {
     socketMap.set(turboSrcID, socket);
   });
 
+socket.on('graphqlResponse', ({ requestId, body }) => {
+    //responding {
+    //  data: {
+    //    createRepo: {
+    //      status: 200,
+    //      repoName: '7db9a/demo',
+    //      repoID: '0x2fc598246e75243383c3bf31e44e84e84e1473f0',
+    //      repoSignature: '0xb6f3695be93f6f510ddd9e24a1368b00e8eda438d6320645038dca544b8815fa',
+    //      message: 'repo found'
+    //    }
+    //  }
+    //}
+    const respond = pendingResponses.get(requestId);
+    clearTimeout(respond.timeout);
+    respond.callback(body);
+    pendingResponses.delete(requestId);
+    
+    if (respond && respond.data && respond.data.createRepo && respond.data.createRepo.status === 200) {
+        console.log('\ncreate repo called\n');
+        console.log('responding', body);
+        // Save repoID.
+    } else {
+        console.error(`No pending response found for request ID ${requestId}`);
+    }
+});
+
   socket.on('graphqlResponse', ({ requestId, body }) => {
     const respond = pendingResponses.get(requestId);
-    if (respond) {
-      console.log('responding', body)
+      if (respond && respond.data && respond.data.createRepo && respond.data.createRepo.status === 200) {
+	   console.log('\ncreate repo called\n')
+           console.log('responding', body)
+          // Save repoID.
+      }
+
       clearTimeout(respond.timeout);
       respond.callback(body);
       pendingResponses.delete(requestId);
