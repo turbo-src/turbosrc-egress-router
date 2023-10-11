@@ -94,34 +94,18 @@ socket.on('graphqlResponse', ({ requestId, body }) => {
     //    }
     //  }
     //}
-    const respond = pendingResponses.get(requestId);
-    clearTimeout(respond.timeout);
-    respond.callback(body);
-    pendingResponses.delete(requestId);
     
-    if (respond && respond.data && respond.data.createRepo && respond.data.createRepo.status === 200) {
+    if (body && body.data && body.data.createRepo && body.data.createRepo.status === 201) {
         console.log('\ncreate repo called\n');
-        console.log('responding', body);
+        console.log(body);
         // Save repoID.
     } else {
         console.error(`No pending response found for request ID ${requestId}`);
     }
-});
-
-  socket.on('graphqlResponse', ({ requestId, body }) => {
     const respond = pendingResponses.get(requestId);
-      if (respond && respond.data && respond.data.createRepo && respond.data.createRepo.status === 200) {
-	   console.log('\ncreate repo called\n')
-           console.log('responding', body)
-          // Save repoID.
-      }
-
-      clearTimeout(respond.timeout);
-      respond.callback(body);
-      pendingResponses.delete(requestId);
-    } else {
-      console.error(`No pending response found for request ID ${requestId}`);
-    }
+    clearTimeout(respond.timeout);
+    respond.callback(body);
+    pendingResponses.delete(requestId);
   });
 
   socket.on('connect_error', (error) => {
@@ -205,7 +189,7 @@ app.post('/graphql', (req, res) => {
 
   // Same aren't sent to turbosrc-service ingress router.
   const socket = socketMap.get(turboSrcID);
-  console.log('routing query:', req.body.query)
+  //console.log('routing query:', req.body.query)
   socket.emit('graphqlRequest', {
     requestId: requestId,
     query: req.body.query,
