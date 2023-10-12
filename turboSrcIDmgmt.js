@@ -131,6 +131,6 @@ module.exports = {
     addRepoToTurboSrcInstance,
     getTurboSrcIDFromRepoName,
     getTurboSrcIDFromRepoID,
-    getRepoNamesFromTurboSrcID
-    getRepoIDssFromTurboSrcID
+    getRepoNamesFromTurboSrcID,
+    getRepoIDsFromTurboSrcID
 };

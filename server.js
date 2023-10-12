@@ -71,12 +71,15 @@ console.log(socketMap)
 io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
 
-  socket.on('newConnection', (turboSrcID, reponame, reponame) => {
-    console.log("newConnection: ", turboSrcID, reponame, reponame)
+  socket.on('newConnection', (turboSrcID, reponame) => { 
+    // here reponame is a placeholder for a new connection
+    // so we just pretend the reponame is also the repoid
+    repoID = reponame
+    console.log("newConnection: ", turboSrcID, reponame, repoID)
 
     if (!checkFileExists(turboSrcID)) {
       createFile(turboSrcID);
-      addRepoToTurboSrcInstance(turboSrcID, reponame, reponame);
+      addRepoToTurboSrcInstance(turboSrcID, reponame, repoID);
     }
 
     socketMap.set(turboSrcID, socket);
@@ -191,7 +194,7 @@ app.post('/graphql', (req, res) => {
 
   // Same aren't sent to turbosrc-service ingress router.
   const socket = socketMap.get(turboSrcID);
-  //console.log('routing query:', req.body.query)
+  console.log('routing query:', req.body.query)
   socket.emit('graphqlRequest', {
     requestId: requestId,
     query: req.body.query,
