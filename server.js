@@ -143,6 +143,11 @@ io4007.on('connection', (socket) => {
     io4007.emit('vote received', user, repo, issueID);
   });
 
+  socket.on('update repo', (repo) => {
+    console.log('repo updated', repo);
+    io4007.emit('repo updated', repo);
+  });
+
   //socket.on('vote cast', (message) => {
   //  console.log("Vote cast: ", message);
   //  socket.emit('vote received', { message: `Received your vote: ${message}` });
