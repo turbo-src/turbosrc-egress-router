@@ -11,6 +11,7 @@ const {
   checkFileExists,
   addRepoToTurboSrcInstance,
   getTurboSrcIDFromRepoName,
+  getTurboSrcIDFromRepoID,
   getRepoNamesFromTurboSrcID,
 } = require('./turboSrcIDmgmt');
 
@@ -218,9 +219,24 @@ app.post('/graphql', (req, res) => {
   }
 
   // If returned, will not hit ingress router.
+  if (req.body.query.includes("getTurboSrcIDFromRepoID")) {
+    const repoIDpattern = /repoID: "(.*?)"/;
+    const repoIDmatch = req.body.query.match(repoIDpattern);
+    const repoID = repoIDmatch ? repoIDmatch[1] : undefined;
+    const result = getTurboSrcIDFromRepoName(repoID);
+    return res.json({ data: { turboSrcID: result } });
+  }
+
+  // If returned, will not hit ingress router.
   if (req.body.query.includes("getRepoNamesFromTurboSrcID")) {
     const result = getRepoNamesFromTurboSrcID(turboSrcID);
     return res.json({ data: { reponames: result } });
+  }
+
+  // If returned, will not hit ingress router.
+  if (req.body.query.includes("getRepoIDsFromTurboSrcID")) {
+    const result = getRepoIDsFromTurboSrcID(turboSrcID);
+    return res.json({ data: { repoIDs: result } });
   }
 
   // Same aren't sent to turbosrc-service ingress router.
