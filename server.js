@@ -71,12 +71,12 @@ console.log(socketMap)
 io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
 
-  socket.on('newConnection', (turboSrcID, reponame) => {
-    console.log("newConnection: ", turboSrcID, reponame)
+  socket.on('newConnection', (turboSrcID, reponame, reponame) => {
+    console.log("newConnection: ", turboSrcID, reponame, reponame)
 
     if (!checkFileExists(turboSrcID)) {
       createFile(turboSrcID);
-      addRepoToTurboSrcInstance(turboSrcID, reponame);
+      addRepoToTurboSrcInstance(turboSrcID, reponame, reponame);
     }
 
     socketMap.set(turboSrcID, socket);
@@ -97,8 +97,10 @@ socket.on('graphqlResponse', ({ requestId, body }) => {
     
     if (body && body.data && body.data.createRepo && body.data.createRepo.status === 201) {
         console.log('\ncreate repo called\n');
-        console.log(body);
-        // Save repoID.
+	reponame = body.data.createRepo.reponame
+	repoID = body.data.createRepo.repoID
+        addRepoToTurboSrcInstance(turboSrcID, reponame, repoID);
+        console.log(reponame, repoID);
     } else {
         console.error(`No pending response found for request ID ${requestId}`);
     }
