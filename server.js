@@ -87,33 +87,39 @@ io.on('connection', (socket) => {
     socketMap.set(turboSrcID, socket);
   });
 
-socket.on('graphqlResponse', ({ requestId, body }) => {
-    //responding {
-    //  data: {
-    //    createRepo: {
-    //      status: 200,
-    //      repoName: '7db9a/demo',
-    //      repoID: '0x2fc598246e75243383c3bf31e44e84e84e1473f0',
-    //      repoSignature: '0xb6f3695be93f6f510ddd9e24a1368b00e8eda438d6320645038dca544b8815fa',
-    //      message: 'repo found'
-    //    }
-    //  }
-    //}
+    socket.on('graphqlResponse', ({ requestId, body }) => {
+         //responding {
+         //  data: {
+         //    createRepo: {
+         //      status: 200,
+         //      repoName: '7db9a/demo',
+         //      repoID: '0x2fc598246e75243383c3bf31e44e84e84e1473f0',
+         //      repoSignature: '0xb6f3695be93f6f510ddd9e24a1368b00e8eda438d6320645038dca544b8815fa',
+         //      message: 'repo found'
+         //    }
+         //  }
+         //}
+        if (body && body.data && body.data.createRepo && body.data.createRepo.status === 201) {
+            console.log('\ncreate repo called\n');
+            const responseReponame = body.data.createRepo.repoName; // Note the change from reponame to repoName based on the example response
+            const repoID = body.data.createRepo.repoID;
     
-    if (body && body.data && body.data.createRepo && body.data.createRepo.status === 201) {
-        console.log('\ncreate repo called\n');
-	reponame = body.data.createRepo.reponame
-	repoID = body.data.createRepo.repoID
-        //addRepoToTurboSrcInstance(turboSrcID, reponame, repoID);
-        console.log('response', reponame, repoID);
-    } else {
-        console.error(`No pending response found for request ID ${requestId}`);
-    }
-    const respond = pendingResponses.get(requestId);
-    clearTimeout(respond.timeout);
-    respond.callback(body);
-    pendingResponses.delete(requestId);
-  });
+            if (createRepoRequest.reponame && createRepoRequest.reponame === responseReponame) {
+                addRepoToTurboSrcInstance(createRepoRequest.turboSrcID, responseReponame, repoID);
+                console.log('response', responseReponame, repoID);
+            } else {
+                console.error('Mismatch in reponame between request and response');
+            }
+            
+        } else {
+            console.error(`No pending response found for request ID ${requestId}`);
+        }
+        
+        const respond = pendingResponses.get(requestId);
+        clearTimeout(respond.timeout);
+        respond.callback(body);
+        pendingResponses.delete(requestId);
+    });
 
   socket.on('connect_error', (error) => {
     console.error(`Connection to egress-router failed. Error:`, error);
