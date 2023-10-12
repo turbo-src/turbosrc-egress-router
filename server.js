@@ -18,6 +18,8 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+createRepoRequest = {}
+
 function getTurboSrcID() {
   return process.env.TURBOSRC_ID;
 }
@@ -102,8 +104,8 @@ socket.on('graphqlResponse', ({ requestId, body }) => {
         console.log('\ncreate repo called\n');
 	reponame = body.data.createRepo.reponame
 	repoID = body.data.createRepo.repoID
-        addRepoToTurboSrcInstance(turboSrcID, reponame, repoID);
-        console.log(reponame, repoID);
+        //addRepoToTurboSrcInstance(turboSrcID, reponame, repoID);
+        console.log('response', reponame, repoID);
     } else {
         console.error(`No pending response found for request ID ${requestId}`);
     }
@@ -171,10 +173,33 @@ app.post('/graphql', (req, res) => {
   }
 
   if (req.body.query.includes("createRepo")) {
-    const reponamePattern = /owner: "(.*?)", repo: "(.*?)"/;
+    // '{ createRepo(turboSrcID: "0xbb0f50e0e76b9c7116be080240b2e150d70d0b0a", owner: "7db9a", repo: "demo", defaultHash: "", contributor_id: "0x70c3183970d5dd9c7c76018050843d2804d0dd89", side: "", token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJnaXRodWJUb2tlbiI6Imdob19MSDF3c3dIcmo5SXIyeHYyUHI4a0REcmQyY1dqc1QzVDY5NWsiLCJpYXQiOjE2OTYyNjk4NjF9.26Qv2ADCmsEFnHuGnQYfZ8BTYETJzvoE8IzdNw6PTY8") {status, repoName, repoID, repoSignature, message} } '
+    // Patterns with \s* to handle potential spaces
+    const reponamePattern = /owner:\s*"(.*?)",\s*repo:\s*"(.*?)"/;
+    const turboSrcIDpattern = /turboSrcID:\s*"(.*?)"/;
+    const contributorIDpattern = /contributor_id:\s*"(.*?)"/;
+  
+    // Extract reponame
     const repoMatch = req.body.query.match(reponamePattern);
     const reponame = repoMatch ? `${repoMatch[1]}/${repoMatch[2]}` : undefined;
-    addRepoToTurboSrcInstance(turboSrcID, reponame);
+  
+    // Extract turboSrcID
+    const turboSrcIDmatch = req.body.query.match(turboSrcIDpattern);
+    const turboSrcID = turboSrcIDmatch ? `${turboSrcIDmatch[1]}` : undefined;
+  
+    // Extract contributorID
+    const contributorIDmatch = req.body.query.match(contributorIDpattern);
+    const contributorID = contributorIDmatch ? `${contributorIDmatch[1]}` : undefined;
+
+    createRepoRequest = {
+      reponame,
+      turboSrcID,
+      contributorID
+    };
+
+    console.log("Parsed values:", createRepoRequest);
+
+    //addRepoToTurboSrcInstance(turboSrcID, reponame);
   }
 
   // If returned, will not hit ingress router.
@@ -194,7 +219,7 @@ app.post('/graphql', (req, res) => {
 
   // Same aren't sent to turbosrc-service ingress router.
   const socket = socketMap.get(turboSrcID);
-  console.log('routing query:', req.body.query)
+  //console.log('routing query:', req.body.query)
   socket.emit('graphqlRequest', {
     requestId: requestId,
     query: req.body.query,
