@@ -2,21 +2,6 @@ const fs = require('fs');
 const path = require('path');
 
 const directoryPath = path.join(__dirname, './turboSrcInstances/');
-//const turboSrcID = '0x9e81be64b30a850e038cb5a85241f58528010016';
-//const reponame = 'reibase/marialis';
-
-/**
- * Initializes module by creating the turboSrcID file for reibase/marialis if it doesn't exist.
- */
-//function initialize(turboSrcID, owner) {
-//    createDirectoryIfNotExist();
-//    reponame = owner + "/" + turboSrcID
-//
-//    if (!checkFileExists(turboSrcID)) {
-//        createFile(turboSrcID);
-//        addRepoToTurboSrcInstance(turboSrcID, reponame);
-//    }
-//}
 
 /**
  * Creates directory if it does not exist.
@@ -26,7 +11,6 @@ function createDirectoryIfNotExist() {
         fs.mkdirSync(directoryPath, { recursive: true });
     }
 }
-
 
 /**
  * Creates a file with the given turboSrcID, if it does not already exist.
@@ -50,11 +34,12 @@ function checkFileExists(turboSrcID) {
 }
 
 /**
- * Adds a repository name to the file of the given turboSrcID.
+ * Adds a repository name and its associated ID to the file of the given turboSrcID.
  * @param {string} turboSrcID - The ID of the turbosrc instance.
  * @param {string} reponame - The name of the repository to be added.
+ * @param {string} repoID - The ID of the repository to be added.
  */
-function addRepoToTurboSrcInstance(turboSrcID, reponame) {
+function addRepoToTurboSrcInstance(turboSrcID, reponame, repoID) {
     const filePath = path.join(directoryPath, turboSrcID);
 
     if (!checkFileExists(turboSrcID)) {
@@ -65,26 +50,24 @@ function addRepoToTurboSrcInstance(turboSrcID, reponame) {
     let content = fs.readFileSync(filePath, 'utf-8');
     let repoList = content.trim().split('\n');
 
-    // Check if the repository is already listed
-    if (!repoList.includes(reponame)) {
+    const repoEntry = `${reponame} ${repoID}`;
+
+    // Check if the repository entry is already listed
+    if (!repoList.includes(repoEntry)) {
         // If it's not listed, append it to the file
-        fs.appendFileSync(filePath, `${reponame}\n`);
+        fs.appendFileSync(filePath, `${repoEntry}\n`);
     }
 }
 
-/**
- * Returns the turboSrcID of the instance associated with the given repository name.
- * @param {string} reponame - The name of the repository to search for.
- * @returns {string|null} The turboSrcID if found, null otherwise.
- */
 function getTurboSrcIDFromRepoName(reponame) {
     const files = fs.readdirSync(directoryPath);
 
     for (const file of files) {
         const filePath = path.join(directoryPath, file);
         const content = fs.readFileSync(filePath, 'utf-8');
+        const repoList = content.trim().split('\n');
 
-        if (content.includes(`${reponame}\n`)) {
+        if (repoList.some(repoEntry => repoEntry.startsWith(`${reponame} `))) {
             return path.basename(file);
         }
     }
@@ -92,11 +75,22 @@ function getTurboSrcIDFromRepoName(reponame) {
     return null;
 }
 
-/**
- * Reads and returns the list of repo names associated with a turbosrc id.
- * @param {string} turboSrcID - The ID of the turbosrc instance.
- * @returns {string[]} An array of repo names associated with the given turbosrc id.
- */
+function getTurboSrcIDFromRepoID(repoID) {
+    const files = fs.readdirSync(directoryPath);
+
+    for (const file of files) {
+        const filePath = path.join(directoryPath, file);
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const repoList = content.trim().split('\n');
+
+        if (repoList.some(repoEntry => repoEntry.endsWith(` ${repoID}`))) {
+            return path.basename(file);
+        }
+    }
+
+    return null;
+}
+
 function getRepoNamesFromTurboSrcID(turboSrcID) {
     const filePath = path.join(directoryPath, turboSrcID);
 
@@ -106,8 +100,28 @@ function getRepoNamesFromTurboSrcID(turboSrcID) {
 
     const content = fs.readFileSync(filePath, 'utf-8');
 
-    // Assuming that repo names are written line by line, split content by newlines.
-    return content.trim().split('\n');
+    // Extracting repo names from the entries
+    return content.trim().split('\n').map(repoEntry => repoEntry.split(' ')[0]);
+}
+
+
+
+/**
+ * Reads and returns the list of repo IDs associated with a turbosrc id.
+ * @param {string} turboSrcID - The ID of the turbosrc instance.
+ * @returns {string[]} An array of repo IDs associated with the given turbosrc id.
+ */
+function getRepoIDsFromTurboSrcID(turboSrcID) {
+    const filePath = path.join(directoryPath, turboSrcID);
+
+    if (!checkFileExists(turboSrcID)) {
+        return [];
+    }
+
+    const content = fs.readFileSync(filePath, 'utf-8');
+
+    // Extracting repo IDs from the entries. Assuming the format is "reponame repoID".
+    return content.trim().split('\n').map(repoEntry => repoEntry.split(' ')[1]);
 }
 
 module.exports = {
@@ -116,7 +130,7 @@ module.exports = {
     checkFileExists,
     addRepoToTurboSrcInstance,
     getTurboSrcIDFromRepoName,
+    getTurboSrcIDFromRepoID,
     getRepoNamesFromTurboSrcID
+    getRepoIDssFromTurboSrcID
 };
-
-//initialize(turboSrcID, reponame)
