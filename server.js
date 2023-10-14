@@ -213,6 +213,7 @@ app.post('/graphql', (req, res) => {
     const reponame = reponameMatch ? reponameMatch[1] : undefined;
     console.log('graphql message getTurboSrcIDFromRepoName reponame: ' + reponame)
     const result = getTurboSrcIDFromRepoName(reponame);
+    console.log('getTurboSrcIDFromRepoName(reponame)', result)
     console.log('graphql message getTurboSrcIDFromRepoName turboSrcID: ' + turboSrcID)
     return res.json({ data: { turboSrcID: result } });
   }
@@ -223,7 +224,8 @@ app.post('/graphql', (req, res) => {
     const repoIDmatch = req.body.query.match(repoIDpattern);
     const repoID = repoIDmatch ? repoIDmatch[1] : undefined;
     console.log('graphql message getTurboSrcIDFromRepoID repoID: ' + repoID)
-    const result = getTurboSrcIDFromRepoName(repoID);
+    const result = getTurboSrcIDFromRepoID(repoID);
+    console.log('getTurboSrcIDFromRepoID(repoID)', result)
     console.log('graphql message getTurboSrcIDFromRepoID turboSrcID: ' + turboSrcID)
     return res.json({ data: { turboSrcID: result } });
   }
