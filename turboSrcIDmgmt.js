@@ -60,14 +60,18 @@ function addRepoToTurboSrcInstance(turboSrcID, reponame, repoID) {
 }
 
 function getTurboSrcIDFromRepoName(reponame) {
+    console.log('getTurboSrcIDFromRepoName turboSrcIDmgmt reponame: ' + reponame)
     const files = fs.readdirSync(directoryPath);
 
     for (const file of files) {
         const filePath = path.join(directoryPath, file);
         const content = fs.readFileSync(filePath, 'utf-8');
+	console.log('file content\n', content)
         const repoList = content.trim().split('\n');
+	console.log('repoList:\n', repoList)
 
         if (repoList.some(repoEntry => repoEntry.startsWith(`${reponame} `))) {
+	    console.log('turboSrcID path.basename(file): ', path.basename(file))
             return path.basename(file);
         }
     }
@@ -76,14 +80,18 @@ function getTurboSrcIDFromRepoName(reponame) {
 }
 
 function getTurboSrcIDFromRepoID(repoID) {
+    console.log('getTurboSrcIDFromRepoID turboSrcIDmgmt repoID: ' + repoID)
     const files = fs.readdirSync(directoryPath);
 
     for (const file of files) {
         const filePath = path.join(directoryPath, file);
         const content = fs.readFileSync(filePath, 'utf-8');
+	console.log('file content\n', content)
         const repoList = content.trim().split('\n');
+	console.log('repoList:\n', repoList)
 
         if (repoList.some(repoEntry => repoEntry.endsWith(` ${repoID}`))) {
+	    console.log('turboSrcID path.basename(file): ', path.basename(file))
             return path.basename(file);
         }
     }
