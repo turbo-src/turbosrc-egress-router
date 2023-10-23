@@ -21,6 +21,8 @@ app.use(cors());
 app.use(bodyParser.json());
 
 createRepoRequest = {}
+let connectedClients = 0;
+
 
 function getTurboSrcID() {
   return process.env.TURBOSRC_ID;
@@ -37,8 +39,7 @@ function getUsersOnDefaultInstance() {
 }
 
 function getInstanceCount() {
-  // Get the number of connected clients on port 4006 using io instance
-  return Object.keys(io.sockets.connected).length;
+  return connectedClients;
 }
 
 // Create a new express app for the second server
@@ -86,8 +87,7 @@ fs.readdirSync(directoryPath).forEach((file) => {
 console.log(socketMap)
 
 io.on('connection', (socket) => {
-  // Chatgpt, whenever there is a new connection,
-  // call getInstanceCount and console.log
+  connectedClients++;
   console.log('Connected to an ingressRouter');
 
   socket.on('newConnection', (turboSrcID, reponame) => {
@@ -105,6 +105,10 @@ io.on('connection', (socket) => {
     }
 
     socketMap.set(turboSrcID, socket);
+  });
+
+  socket.on('disconnect', () => {
+    connectedClients--;
   });
 
   socket.on('graphqlResponse', ({ requestId, body }) => {
