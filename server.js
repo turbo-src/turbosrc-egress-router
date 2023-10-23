@@ -190,6 +190,13 @@ app4007.get('/', (req, res) => {
 });
 
 app.post('/graphql', (req, res) => {
+  // There should probably be
+
+  // getTurboSrcSystemInfo
+  // extract:
+  //   - router:
+  //   - instance: currently blank. Focusing on router wide info right now.
+
   console.log('routing query:', req.body.query)
   const requestId = Date.now().toString();
 
