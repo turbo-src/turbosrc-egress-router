@@ -27,17 +27,18 @@ function getTurboSrcID() {
 }
 
 function getMaxInstances() {
-  return process.env.MAX_INSTANCES;
+  return 2 /*process.env.MAX_INSTANCES*/;
 }
 
 function getUsersOnDefaultInstance() {
   // Add implementation code
+  usersOnDefaultInstance = 5
   return usersOnDefaultInstance
 }
 
 function getInstanceCount() {
-  // Add implementation code
-  return instanceCount
+  // Get the number of connected clients on port 4006 using io instance
+  return Object.keys(io.sockets.connected).length;
 }
 
 // Create a new express app for the second server
@@ -85,13 +86,18 @@ fs.readdirSync(directoryPath).forEach((file) => {
 console.log(socketMap)
 
 io.on('connection', (socket) => {
+  // Chatgpt, whenever there is a new connection,
+  // call getInstanceCount and console.log
   console.log('Connected to an ingressRouter');
 
-  socket.on('newConnection', (turboSrcID, reponame) => { 
+  socket.on('newConnection', (turboSrcID, reponame) => {
     // here reponame is a placeholder for a new connection
     // so we just pretend the reponame is also the repoid
     repoID = reponame
     console.log("newConnection: ", turboSrcID, reponame, repoID)
+
+    instanceCount = getInstanceCount()
+    console.log(`instance count: "${instanceCount}" `)
 
     if (!checkFileExists(turboSrcID)) {
       createFile(turboSrcID);
@@ -101,39 +107,39 @@ io.on('connection', (socket) => {
     socketMap.set(turboSrcID, socket);
   });
 
-    socket.on('graphqlResponse', ({ requestId, body }) => {
-         //responding {
-         //  data: {
-         //    createRepo: {
-         //      status: 200,
-         //      repoName: '7db9a/demo',
-         //      repoID: '0x2fc598246e75243383c3bf31e44e84e84e1473f0',
-         //      repoSignature: '0xb6f3695be93f6f510ddd9e24a1368b00e8eda438d6320645038dca544b8815fa',
-         //      message: 'repo found'
-         //    }
-         //  }
-         //}
-        if (body && body.data && body.data.createRepo && body.data.createRepo.status === 201) {
-            console.log('\ncreate repo called\n');
-            const responseReponame = body.data.createRepo.repoName; // Note the change from reponame to repoName based on the example response
-            const repoID = body.data.createRepo.repoID;
-    
-            if (createRepoRequest.reponame && createRepoRequest.reponame === responseReponame) {
-                addRepoToTurboSrcInstance(createRepoRequest.turboSrcID, responseReponame, repoID);
-                console.log('response', responseReponame, repoID);
-            } else {
-                console.error('Mismatch in reponame between request and response');
-            }
-            
-        } else {
-            console.error(`No pending response found for request ID ${requestId}`);
-        }
-        
-        const respond = pendingResponses.get(requestId);
-        clearTimeout(respond.timeout);
-        respond.callback(body);
-        pendingResponses.delete(requestId);
-    });
+  socket.on('graphqlResponse', ({ requestId, body }) => {
+    //responding {
+    //  data: {
+    //    createRepo: {
+    //      status: 200,
+    //      repoName: '7db9a/demo',
+    //      repoID: '0x2fc598246e75243383c3bf31e44e84e84e1473f0',
+    //      repoSignature: '0xb6f3695be93f6f510ddd9e24a1368b00e8eda438d6320645038dca544b8815fa',
+    //      message: 'repo found'
+    //    }
+    //  }
+    //}
+    if (body && body.data && body.data.createRepo && body.data.createRepo.status === 201) {
+      console.log('\ncreate repo called\n');
+      const responseReponame = body.data.createRepo.repoName; // Note the change from reponame to repoName based on the example response
+      const repoID = body.data.createRepo.repoID;
+
+      if (createRepoRequest.reponame && createRepoRequest.reponame === responseReponame) {
+        addRepoToTurboSrcInstance(createRepoRequest.turboSrcID, responseReponame, repoID);
+        console.log('response', responseReponame, repoID);
+      } else {
+        console.error('Mismatch in reponame between request and response');
+      }
+
+    } else {
+      console.error(`No pending response found for request ID ${requestId}`);
+    }
+
+    const respond = pendingResponses.get(requestId);
+    clearTimeout(respond.timeout);
+    respond.callback(body);
+    pendingResponses.delete(requestId);
+  });
 
   socket.on('connect_error', (error) => {
     console.error(`Connection to egress-router failed. Error:`, error);
@@ -204,11 +210,11 @@ app.post('/graphql', (req, res) => {
     // Patterns with \s* to handle potential spaces
     const reponamePattern = /owner:\s*"(.*?)",\s*repo:\s*"(.*?)"/;
     const contributorIDpattern = /contributor_id:\s*"(.*?)"/;
-  
+
     // Extract reponame
     const repoMatch = req.body.query.match(reponamePattern);
     const reponame = repoMatch ? `${repoMatch[1]}/${repoMatch[2]}` : undefined;
-   
+
     // Extract contributorID
     const contributorIDmatch = req.body.query.match(contributorIDpattern);
     const contributorID = contributorIDmatch ? `${contributorIDmatch[1]}` : undefined;
