@@ -14,6 +14,7 @@ const {
   getTurboSrcIDFromRepoID,
   getRepoNamesFromTurboSrcID,
 } = require('./turboSrcIDmgmt');
+const { get } = require('superagent');
 
 const app = express();
 app.use(cors());
@@ -25,7 +26,19 @@ function getTurboSrcID() {
   return process.env.TURBOSRC_ID;
 }
 
-const turboSrcIDfromInstance = getTurboSrcID();
+function getMaxInstances() {
+  return process.env.MAX_INSTANCES;
+}
+
+function getUsersOnDefaultInstance() {
+  // Add implementation code
+  return usersOnDefaultInstance
+}
+
+function getInstanceCount() {
+  // Add implementation code
+  return instanceCount
+}
 
 // Create a new express app for the second server
 const app4007 = express();
