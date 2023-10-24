@@ -28,6 +28,8 @@ function getTurboSrcID() {
   return process.env.TURBOSRC_ID;
 }
 
+const turboSrcIDfromInstance = getTurboSrcID();
+
 function getMaxInstances() {
   return 2 /*process.env.MAX_INSTANCES*/;
 }
