@@ -110,7 +110,10 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    connectedClients--;
+    connectedClients--; 
+    instanceCount = getInstanceCount()
+    console.log('an instance disconnected')
+    console.log(`instance count: "${instanceCount}" `)
   });
 
   socket.on('graphqlResponse', ({ requestId, body }) => {
