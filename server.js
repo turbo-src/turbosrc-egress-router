@@ -31,7 +31,7 @@ function getTurboSrcID() {
 const turboSrcIDfromInstance = getTurboSrcID();
 
 function getMaxInstances() {
-  return 2 /*process.env.MAX_INSTANCES*/;
+  return process.env.MAX_INSTANCES;
 }
 
 function getUsersOnDefaultInstance() {
@@ -66,6 +66,7 @@ const io = socketIO(server, {
     credentials: true
   }
 });
+
 const io4007 = socketIO(server4007, {
   path: '/vote-client/',
   cors: {
@@ -87,6 +88,24 @@ fs.readdirSync(directoryPath).forEach((file) => {
 });
 
 console.log(socketMap)
+
+
+// Parsing as base-10 (decimal) to ensure consistent interpretation of the string.
+let maxInstances = parseInt(getMaxInstances(), 10);
+console.log(`max instances is set to: "${maxInstances}"`)
+
+io.use((socket, next) => {
+    let instanceCount = getInstanceCount();
+    console.log(`instance count: "${instanceCount}" `);
+
+    if (instanceCount >= maxInstances) {
+        console.log('Reached maximum instances, denying new connection');
+        // Deny the connection by passing an error to the next function
+        next(new Error('Reached maximum instances'));
+    } else {
+        next(); // Proceed with the connection
+    }
+});
 
 io.on('connection', (socket) => {
   connectedClients++;
