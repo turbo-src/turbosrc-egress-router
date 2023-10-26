@@ -51,8 +51,10 @@ function verifySignedTurboSrcID(signedTurboSrcID, turboSrcID) {
 
   // Compare the derived address with the provided Ethereum address
   if (derivedAddress.toLowerCase() !== turboSrcID.toLowerCase()) {
-      throw new Error('Invalid signature');
+      console.log(`Connecting instance (${turboSrcID}) isn't the owner due to invalid signature.`);
+      return false;  // return false if the signature is invalid
   }
+  return true;  // return true if the signature is valid
 }
 
 // Create a new express app for the second server
@@ -105,9 +107,9 @@ io.on('connection', (socket) => {
   socket.on('newConnection', (turboSrcID, signedTurboSrcIDturboSrcID, reponame) => {
     console.log("newConnection: ", turboSrcID, signedTurboSrcIDturboSrcID, reponame)
 
-    const verified = verifySignedTurboSrcID(signedTurboSrcIDturboSrcID, turboSrcID);
+    const isValidSignature = verifySignedTurboSrcID(signedTurboSrcIDturboSrcID, turboSrcID);
 
-    if (!verified) {
+    if (isValidSignature) {
         if (!checkFileExists(turboSrcID)) {
           createFile(turboSrcID);
           addRepoToTurboSrcInstance(turboSrcID, reponame);
@@ -115,9 +117,8 @@ io.on('connection', (socket) => {
 
         socketMap.set(turboSrcID, socket);
         console.log('Validated turboSrcID from message signature.')
-        //console.log('socketMap', socketMap)
     } else {
-      console.log("Invalid  turboSrcID. Not adding to socketMap. Signed turboSrcID does not match turboSrcID.")
+      console.log("Invalid turboSrcID. Not adding to socketMap. Signed turboSrcID does not match turboSrcID.");
     }
   });
 
