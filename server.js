@@ -14,6 +14,9 @@ const {
   getTurboSrcIDFromRepoID,
   getRepoNamesFromTurboSrcID,
 } = require('./turboSrcIDmgmt');
+const { sign } = require('crypto');
+const Wallet = require('ethereumjs-wallet');
+const ethUtil = require('ethereumjs-util');
 
 const app = express();
 app.use(cors());
@@ -26,6 +29,31 @@ function getTurboSrcID() {
 }
 
 const turboSrcIDfromInstance = getTurboSrcID();
+
+function verifySignedTurboSrcID(signedTurboSrcID, turboSrcID) {
+  // Convert the turboSrcID to a Buffer if it isn't already
+  const turboSrcIDBuffer = Buffer.isBuffer(turboSrcID) ? turboSrcID : ethUtil.toBuffer(turboSrcID);
+
+  // Firstly, hash the message using keccak256 (standard for Ethereum)
+  const messageHash = ethUtil.keccak256(turboSrcIDBuffer);
+
+  // Separate the v, r, and s components from the signature
+  const signatureBuffer = Buffer.from(signedTurboSrcID, 'hex');
+  const r = signatureBuffer.slice(0, 32);
+  const s = signatureBuffer.slice(32, 64);
+  const v = signatureBuffer.readUInt8(64);
+
+  // Recover the public key from the signature and message hash
+  const publicKey = ethUtil.ecrecover(messageHash, v, r, s);
+
+  // Derive the Ethereum address from the public key and add the 0x prefix
+  const derivedAddress = "0x" + ethUtil.publicToAddress(publicKey).toString('hex');
+
+  // Compare the derived address with the provided Ethereum address
+  if (derivedAddress.toLowerCase() !== turboSrcID.toLowerCase()) {
+      throw new Error('Invalid signature');
+  }
+}
 
 // Create a new express app for the second server
 const app4007 = express();
@@ -74,53 +102,47 @@ console.log(socketMap)
 io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
 
-  socket.on('newConnection', (turboSrcID, reponame) => { 
-    // here reponame is a placeholder for a new connection
-    // so we just pretend the reponame is also the repoid
-    repoID = reponame
-    console.log("newConnection: ", turboSrcID, reponame, repoID)
+  socket.on('newConnection', (turboSrcID, signedTurboSrcIDturboSrcID, reponame) => {
+    console.log("newConnection: ", turboSrcID, signedTurboSrcIDturboSrcID, reponame)
 
-    if (!checkFileExists(turboSrcID)) {
-      createFile(turboSrcID);
-      addRepoToTurboSrcInstance(turboSrcID, reponame, repoID);
+    const verified = verifySignedTurboSrcID(signedTurboSrcIDturboSrcID, turboSrcID);
+
+    if (!verified) {
+        if (!checkFileExists(turboSrcID)) {
+          createFile(turboSrcID);
+          addRepoToTurboSrcInstance(turboSrcID, reponame);
+        }
+
+        socketMap.set(turboSrcID, socket);
+        console.log('Validated turboSrcID from message signature.')
+        //console.log('socketMap', socketMap)
+    } else {
+      console.log("Invalid  turboSrcID. Not adding to socketMap. Signed turboSrcID does not match turboSrcID.")
     }
-
-    socketMap.set(turboSrcID, socket);
   });
 
-    socket.on('graphqlResponse', ({ requestId, body }) => {
-         //responding {
-         //  data: {
-         //    createRepo: {
-         //      status: 200,
-         //      repoName: '7db9a/demo',
-         //      repoID: '0x2fc598246e75243383c3bf31e44e84e84e1473f0',
-         //      repoSignature: '0xb6f3695be93f6f510ddd9e24a1368b00e8eda438d6320645038dca544b8815fa',
-         //      message: 'repo found'
-         //    }
-         //  }
-         //}
-        if (body && body.data && body.data.createRepo && body.data.createRepo.status === 201) {
-            console.log('\ncreate repo called\n');
-            const responseReponame = body.data.createRepo.repoName; // Note the change from reponame to repoName based on the example response
-            const repoID = body.data.createRepo.repoID;
-    
-            if (createRepoRequest.reponame && createRepoRequest.reponame === responseReponame) {
-                addRepoToTurboSrcInstance(createRepoRequest.turboSrcID, responseReponame, repoID);
-                console.log('response', responseReponame, repoID);
-            } else {
-                console.error('Mismatch in reponame between request and response');
-            }
-            
-        } else {
-            console.error(`No pending response found for request ID ${requestId}`);
-        }
-        
-        const respond = pendingResponses.get(requestId);
-        clearTimeout(respond.timeout);
-        respond.callback(body);
-        pendingResponses.delete(requestId);
-    });
+  socket.on('graphqlResponse', ({ requestId, body }) => {
+      if (body && body.data && body.data.createRepo && body.data.createRepo.status === 201) {
+          console.log('\ncreate repo called\n');
+          const responseReponame = body.data.createRepo.repoName; // Note the change from reponame to repoName based on the example response
+          const repoID = body.data.createRepo.repoID;
+  
+          if (createRepoRequest.reponame && createRepoRequest.reponame === responseReponame) {
+              addRepoToTurboSrcInstance(createRepoRequest.turboSrcID, responseReponame, repoID);
+              console.log('response', responseReponame, repoID);
+          } else {
+              console.error('Mismatch in reponame between request and response');
+          }
+          
+      } else {
+          console.error(`No pending response found for request ID ${requestId}`);
+      }
+      
+      const respond = pendingResponses.get(requestId);
+      clearTimeout(respond.timeout);
+      respond.callback(body);
+      pendingResponses.delete(requestId);
+  });
 
   socket.on('connect_error', (error) => {
     console.error(`Connection to egress-router failed. Error:`, error);
