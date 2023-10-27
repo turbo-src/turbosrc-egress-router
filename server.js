@@ -30,6 +30,14 @@ function getTurboSrcID() {
 
 const turboSrcIDfromInstance = getTurboSrcID();
 
+function getLatestOIDs() {
+  const oids = process.env.LATEST_OIDS;
+  return JSON.parse(oids);
+}
+
+console.log(getLatestOIDs()); // Will print ["oid1", "oid2", "oid3"]
+
+
 function verifySignedTurboSrcID(signedTurboSrcID, turboSrcID) {
   // Convert the turboSrcID to a Buffer if it isn't already
   const turboSrcIDBuffer = Buffer.isBuffer(turboSrcID) ? turboSrcID : ethUtil.toBuffer(turboSrcID);
