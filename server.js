@@ -30,12 +30,12 @@ function getTurboSrcID() {
 
 const turboSrcIDfromInstance = getTurboSrcID();
 
-function getLatestOIDs() {
-  const oids = process.env.LATEST_OIDS;
+function getCompatibleVersions() {
+  const oids = process.env.COMPATIBLE_VERSIONS;
   return JSON.parse(oids);
 }
 
-console.log(getLatestOIDs()); // Will print ["oid1", "oid2", "oid3"]
+console.log(getCompatibleVersions()); // Will print ["oid1", "oid2", "oid3"]
 
 
 function verifySignedTurboSrcID(signedTurboSrcID, turboSrcID) {
