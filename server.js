@@ -112,10 +112,21 @@ console.log(socketMap)
 io.on('connection', (socket) => {
   console.log('Connected to an ingressRouter');
 
-  socket.on('newConnection', (turboSrcID, signedTurboSrcIDturboSrcID, reponame) => {
-    console.log("newConnection: ", turboSrcID, signedTurboSrcIDturboSrcID, reponame)
+  socket.on('newConnection', (turboSrcID, signedTurboSrcIDturboSrcID, reponame, currentVersion) => {
+    console.log("newConnection: ", turboSrcID, signedTurboSrcIDturboSrcID, reponame, currentVersion)
+  
+    // Check if the currentVersion is compatible
+    const compatibleVersions = getCompatibleVersions();
+    if (!compatibleVersions.includes(currentVersion)) {
+      socket.emit('versionMismatch', { 
+        message: "You are not running a compatible version. Please pull master.", 
+        suggestedVersion: compatibleVersions[compatibleVersions.length - 1] 
+      });
+      return; // Exit the function early, as the version is not compatible
+    }
 
     const isValidSignature = verifySignedTurboSrcID(signedTurboSrcIDturboSrcID, turboSrcID);
+
 
     if (isValidSignature) {
         if (!checkFileExists(turboSrcID)) {
