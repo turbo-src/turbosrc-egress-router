@@ -115,13 +115,13 @@ io.on('connection', (socket) => {
 
   socket.on('newConnection', (turboSrcID, signedTurboSrcIDturboSrcID, reponame, currentVersion) => {
     console.log("newConnection: ", turboSrcID, signedTurboSrcIDturboSrcID, reponame, currentVersion)
-  
+
     // Check if the currentVersion is compatible
     const compatibleVersions = getCompatibleVersions();
     if (!compatibleVersions.includes(currentVersion)) {
-      socket.emit('versionMismatch', { 
-        message: "You are not running a compatible version. Please pull master.", 
-        suggestedVersion: compatibleVersions[compatibleVersions.length - 1] 
+      socket.emit('versionMismatch', {
+        message: "You are not running a compatible version. Please pull master.",
+        suggestedVersion: compatibleVersions[compatibleVersions.length - 1]
       });
       incompatibleTurboSrcIDs.set(turboSrcID, true);
       return; // Exit the function early, as the version is not compatible
@@ -148,18 +148,18 @@ io.on('connection', (socket) => {
           console.log('\ncreate repo called\n');
           const responseReponame = body.data.createRepo.repoName; // Note the change from reponame to repoName based on the example response
           const repoID = body.data.createRepo.repoID;
-  
+
           if (createRepoRequest.reponame && createRepoRequest.reponame === responseReponame) {
               addRepoToTurboSrcInstance(createRepoRequest.turboSrcID, responseReponame, repoID);
               console.log('response', responseReponame, repoID);
           } else {
               console.error('Mismatch in reponame between request and response');
           }
-          
+
       } else {
           console.error(`No pending response found for request ID ${requestId}`);
       }
-      
+
       const respond = pendingResponses.get(requestId);
       clearTimeout(respond.timeout);
       respond.callback(body);
@@ -173,11 +173,11 @@ io.on('connection', (socket) => {
         socketMap.delete(key);
       }
     }
-    
+
     // Remove the turboSrcID from incompatibleTurboSrcIDs
     incompatibleTurboSrcIDs.delete(turboSrcID);
   });
- 
+
 
   socket.on('connect_error', (error) => {
     console.error(`Connection to egress-router failed. Error:`, error);
@@ -248,11 +248,11 @@ app.post('/graphql', (req, res) => {
     // Patterns with \s* to handle potential spaces
     const reponamePattern = /owner:\s*"(.*?)",\s*repo:\s*"(.*?)"/;
     const contributorIDpattern = /contributor_id:\s*"(.*?)"/;
-  
+
     // Extract reponame
     const repoMatch = req.body.query.match(reponamePattern);
     const reponame = repoMatch ? `${repoMatch[1]}/${repoMatch[2]}` : undefined;
-   
+
     // Extract contributorID
     const contributorIDmatch = req.body.query.match(contributorIDpattern);
     const contributorID = contributorIDmatch ? `${contributorIDmatch[1]}` : undefined;
@@ -266,6 +266,35 @@ app.post('/graphql', (req, res) => {
     console.log("Parsed values:", createRepoRequest);
 
     //addRepoToTurboSrcInstance(turboSrcID, reponame);
+  }
+
+  if (req.body.query.includes("getTurboSrcSystemInfo")) {
+    const turboSrcIDPattern = /turboSrcID: "(.*?)"/;
+    const clientCurrentVersionPattern = /clientCurrentVersion: "(.*?)"/;
+
+    const turboSrcIDMatch = req.body.query.match(turboSrcIDPattern);
+    const clientCurrentVersionMatch = req.body.query.match(clientCurrentVersionPattern);
+
+    const turboSrcID = turboSrcIDMatch ? turboSrcIDMatch[1] : undefined;
+    const clientCurrentVersion = clientCurrentVersionMatch ? clientCurrentVersionMatch[1] : undefined;
+
+    console.log('graphql message getTurboSrcSystemInfo turboSrcID: ' + turboSrcID);
+    console.log('graphql message getTurboSrcSystemInfo clientCurrentVersion: ' + clientCurrentVersion);
+
+    const result = getTurboSrcSystemInfo(turboSrcID, clientCurrentVersion); // This should be the server-side function that computes or fetches the necessary data
+    const { instanceCompatilbeWithRouter, message } = result;
+
+    console.log('graphql message getTurboSrcSystemInfo instanceCompatilbeWithRouter:', instanceCompatilbeWithRouter);
+    console.log('graphql message getTurboSrcSystemInfo message:', message);
+
+    return res.json({
+        data: {
+            getTurboSrcSystemInfo: {
+                instanceCompatilbeWithRouter,
+                message
+            }
+        }
+    });
   }
 
   // If returned, will not hit ingress router.
@@ -305,21 +334,21 @@ app.post('/graphql', (req, res) => {
   }
 
   const socket = socketMap.get(turboSrcID);
-  
+
   // If the instance is on an incompatible version, return an error right away.
   if (incompatibleTurboSrcIDs.has(turboSrcID)) {
       console.log(`Request from incompatible turboSrcID ${turboSrcID} blocked.`);
       res.status(400).send('Request from incompatible version blocked.');
       return; // End the processing here.
   }
-  
+
   // Emit if instance is compatible.
   socket.emit('graphqlRequest', {
       requestId: requestId,
       query: req.body.query,
       variables: req.body.variables
   });
-  
+
   const respond = {
       callback: (data) => res.json(data),
       timeout: setTimeout(() => {
@@ -327,7 +356,7 @@ app.post('/graphql', (req, res) => {
           pendingResponses.delete(requestId);
       }, 2000) // 2 seconds
   };
-  
+
   pendingResponses.set(requestId, respond);
 });
 
