@@ -23,6 +23,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 createRepoRequest = {}
+const incompatibleTurboSrcIDs = new Map();
 
 function getTurboSrcID() {
   return process.env.TURBOSRC_ID;
@@ -122,6 +123,7 @@ io.on('connection', (socket) => {
         message: "You are not running a compatible version. Please pull master.", 
         suggestedVersion: compatibleVersions[compatibleVersions.length - 1] 
       });
+      incompatibleTurboSrcIDs.set(turboSrcID, true);
       return; // Exit the function early, as the version is not compatible
     }
 
@@ -163,6 +165,19 @@ io.on('connection', (socket) => {
       respond.callback(body);
       pendingResponses.delete(requestId);
   });
+
+  socket.on('disconnect', () => {
+    // Remove the turboSrcID from socketMap
+    for (let [key, value] of socketMap.entries()) {
+      if (value === socket) {
+        socketMap.delete(key);
+      }
+    }
+    
+    // Remove the turboSrcID from incompatibleTurboSrcIDs
+    incompatibleTurboSrcIDs.delete(turboSrcID);
+  });
+ 
 
   socket.on('connect_error', (error) => {
     console.error(`Connection to egress-router failed. Error:`, error);
@@ -289,22 +304,30 @@ app.post('/graphql', (req, res) => {
     return res.json({ data: { repoIDs: result } });
   }
 
-  // Same aren't sent to turbosrc-service ingress router.
   const socket = socketMap.get(turboSrcID);
+  
+  // If the instance is on an incompatible version, return an error right away.
+  if (incompatibleTurboSrcIDs.has(turboSrcID)) {
+      console.log(`Request from incompatible turboSrcID ${turboSrcID} blocked.`);
+      res.status(400).send('Request from incompatible version blocked.');
+      return; // End the processing here.
+  }
+  
+  // Emit if instance is compatible.
   socket.emit('graphqlRequest', {
-    requestId: requestId,
-    query: req.body.query,
-    variables: req.body.variables
+      requestId: requestId,
+      query: req.body.query,
+      variables: req.body.variables
   });
-
+  
   const respond = {
-    callback: (data) => res.json(data),
-    timeout: setTimeout(() => {
-      res.status(500).send('Request timed out.');
-      pendingResponses.delete(requestId);
-    }, 2000) // 2 seconds
+      callback: (data) => res.json(data),
+      timeout: setTimeout(() => {
+          res.status(500).send('Request timed out.');
+          pendingResponses.delete(requestId);
+      }, 2000) // 2 seconds
   };
-
+  
   pendingResponses.set(requestId, respond);
 });
 
