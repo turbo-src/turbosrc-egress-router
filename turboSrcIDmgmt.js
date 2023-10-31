@@ -99,14 +99,6 @@ function getTurboSrcIDFromRepoID(repoID) {
     return null;
 }
 
-function getTurboSrcSystemInfo(turboSrcID, clientCurrentVersion) {
-    console.log(`getTurboSrcSystemInfo turboSrcIDmgmt\nturboSrcID: "${turboSrcID}"\nclientCurrentVersion: "${clientCurrentVersion}"`);
-    
-    const instanceCompatilbeWithRouter = "foo";
-    const message = "bar";
-
-    return { instanceCompatilbeWithRouter, message };
-}
 
 function getRepoNamesFromTurboSrcID(turboSrcID) {
     const filePath = path.join(directoryPath, turboSrcID);
@@ -149,6 +141,5 @@ module.exports = {
     getTurboSrcIDFromRepoName,
     getTurboSrcIDFromRepoID,
     getRepoNamesFromTurboSrcID,
-    getRepoIDsFromTurboSrcID,
-    getTurboSrcSystemInfo
+    getRepoIDsFromTurboSrcID
 };

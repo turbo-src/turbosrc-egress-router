@@ -12,8 +12,7 @@ const {
   addRepoToTurboSrcInstance,
   getTurboSrcIDFromRepoName,
   getTurboSrcIDFromRepoID,
-  getRepoNamesFromTurboSrcID,
-  getTurboSrcSystemInfo
+  getRepoNamesFromTurboSrcID
 } = require('./turboSrcIDmgmt');
 const { sign } = require('crypto');
 const Wallet = require('ethereumjs-wallet');
@@ -39,6 +38,20 @@ function getCompatibleVersions() {
 
 console.log(getCompatibleVersions()); // Will print ["oid1", "oid2", "oid3"]
 
+function getTurboSrcSystemInfo(turboSrcID, clientCurrentVersion) {
+    console.log(`getTurboSrcSystemInfo turboSrcIDmgmt\nturboSrcID: "${turboSrcID}"\nclientCurrentVersion: "${clientCurrentVersion}"`);
+    let instanceCompatilbeWithRouter = "yes";
+
+    // Check if the currentVersion is compatible
+    const compatibleVersions = getCompatibleVersions();
+    if (!compatibleVersions.includes(clientCurrentVersion)) {
+        instanceCompatilbeWithRouter = "no";
+    }  // Removed the extra parenthesis here
+
+    const message = "github.com/turbo-src/turbo-src";
+
+    return { instanceCompatilbeWithRouter, message };
+}
 
 function verifySignedTurboSrcID(signedTurboSrcID, turboSrcID) {
   // Convert the turboSrcID to a Buffer if it isn't already
