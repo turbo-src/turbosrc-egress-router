@@ -36,21 +36,32 @@ function getCompatibleVersions() {
   return JSON.parse(oids);
 }
 
-console.log(getCompatibleVersions()); // Will print ["oid1", "oid2", "oid3"]
 
 function getTurboSrcSystemInfo(turboSrcID, clientCurrentVersion) {
-    console.log(`getTurboSrcSystemInfo turboSrcIDmgmt\nturboSrcID: "${turboSrcID}"\nclientCurrentVersion: "${clientCurrentVersion}"`);
-    let instanceCompatilbeWithRouter = "yes";
-
-    // Check if the currentVersion is compatible
+    console.log(`getTurboSrcSystemInfo:\nturboSrcID: "${turboSrcID}"\nclientCurrentVersion: "${clientCurrentVersion}"`);
     const compatibleVersions = getCompatibleVersions();
+    console.log(compatibleVersions); // Will print ["oid1", "oid2", "oid3"]
+    let clientIsCompatibleWithRouter = "yes";
+    let isCompatibleTurboSrcID = "yes"; // Default to yes, will be set to "no" if found incompatible
+
+    // Check if the turboSrcID is known to be incompatible
+    if (incompatibleTurboSrcIDs.has(turboSrcID)) {
+        isCompatibleTurboSrcID = "no";
+    }
+
+    // Check if the client version is compatible with the router's compatible versions
     if (!compatibleVersions.includes(clientCurrentVersion)) {
-        instanceCompatilbeWithRouter = "no";
-    }  // Removed the extra parenthesis here
+        clientIsCompatibleWithRouter = "no";
+    }
 
     const message = "github.com/turbo-src/turbo-src";
 
-    return { instanceCompatilbeWithRouter, message };
+    // Include isCompatibleTurboSrcID and clientIsCompatibleWithRouter in the returned object
+    return {
+        clientIsCompatibleWithRouter,
+        isCompatibleTurboSrcID,
+        message
+    };
 }
 
 function verifySignedTurboSrcID(signedTurboSrcID, turboSrcID) {
@@ -129,9 +140,9 @@ io.on('connection', (socket) => {
 
   socket.on('newConnection', (turboSrcID, signedTurboSrcIDturboSrcID, reponame, currentVersion) => {
     console.log("newConnection: ", turboSrcID, signedTurboSrcIDturboSrcID, reponame, currentVersion)
-
-    // Check if the currentVersion is compatible
     const compatibleVersions = getCompatibleVersions();
+    console.log(compatibleVersions); // Will print ["oid1", "oid2", "oid3"]
+
     if (!compatibleVersions.includes(currentVersion)) {
       socket.emit('versionMismatch', {
         message: "You are not running a compatible version. Please pull master.",
