@@ -40,6 +40,7 @@ function getCompatibleVersions() {
 function getTurboSrcSystemInfo(turboSrcID, clientCurrentVersion) {
     console.log(`getTurboSrcSystemInfo:\nturboSrcID: "${turboSrcID}"\nclientCurrentVersion: "${clientCurrentVersion}"`);
     const compatibleVersions = getCompatibleVersions();
+    console.log(`compatibleVersions:\n"${compatibleVersions}"`); // Will print ["oid1", "oid2", "oid3"]
     console.log(compatibleVersions); // Will print ["oid1", "oid2", "oid3"]
     let clientIsCompatibleWithRouter = "yes";
     let isCompatibleTurboSrcID = "yes"; // Default to yes, will be set to "no" if found incompatible
@@ -57,6 +58,7 @@ function getTurboSrcSystemInfo(turboSrcID, clientCurrentVersion) {
     const message = "github.com/turbo-src/turbo-src";
 
     // Include isCompatibleTurboSrcID and clientIsCompatibleWithRouter in the returned object
+    console.log(`clientIsCompatibleWithRouter: "${clientIsCompatibleWithRouter}"\nisCompatibleTurboSrcID: "${isCompatibleTurboSrcID}"\nmessage: "${message}"`)
     return {
         clientIsCompatibleWithRouter,
         isCompatibleTurboSrcID,
@@ -141,7 +143,7 @@ io.on('connection', (socket) => {
   socket.on('newConnection', (turboSrcID, signedTurboSrcIDturboSrcID, reponame, currentVersion) => {
     console.log("newConnection: ", turboSrcID, signedTurboSrcIDturboSrcID, reponame, currentVersion)
     const compatibleVersions = getCompatibleVersions();
-    console.log(compatibleVersions); // Will print ["oid1", "oid2", "oid3"]
+    console.log(`compatibleVersions:\n"${compatibleVersions}"`); // Will print ["oid1", "oid2", "oid3"]
 
     if (!compatibleVersions.includes(currentVersion)) {
       socket.emit('versionMismatch', {
@@ -307,15 +309,18 @@ app.post('/graphql', (req, res) => {
     console.log('graphql message getTurboSrcSystemInfo clientCurrentVersion: ' + clientCurrentVersion);
 
     const result = getTurboSrcSystemInfo(turboSrcID, clientCurrentVersion); // This should be the server-side function that computes or fetches the necessary data
-    const { instanceCompatilbeWithRouter, message } = result;
+    const { clientIsCompatibleWithRouter, isCompatibleTurboSrcID, message } = result
 
-    console.log('graphql message getTurboSrcSystemInfo instanceCompatilbeWithRouter:', instanceCompatilbeWithRouter);
-    console.log('graphql message getTurboSrcSystemInfo message:', message);
+
+    console.log('graphql message getTurboSrcSystemInfo clientIsCompatibleWithRouter:' +  clientIsCompatibleWithRouter);
+    console.log('graphql message getTurboSrcSystemInfo isCompatibleTurboSrcID:' + isCompatibleTurboSrcID);
+    console.log('graphql message getTurboSrcSystemInfo message:' +  message);
 
     return res.json({
         data: {
             getTurboSrcSystemInfo: {
-                instanceCompatilbeWithRouter,
+                clientIsCompatibleWithRouter,
+                isCompatibleTurboSrcID,
                 message
             }
         }
